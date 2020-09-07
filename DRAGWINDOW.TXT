@@ -1,0 +1,35 @@
+Title:			DRAGWIND
+Author:			Thomas Hawtin (tackline@tackline.demon.co.uk)
+Version:		0.01
+Title From:		Documentation
+Author From:		Documentation
+Version From:		Documentation
+Supplier:		Thomas Hawtin (tackline@tackline.demon.co.uk)
+Date:			15/10/95
+Keywords:		Window managers
+Shareware:		No
+Machine:		Archimedes
+Operating system:	RISCOS
+Memory requirements:	
+Peripherals needed:	
+Other s/ware needed:	
+Directory:		micros/arch/riscos/d189
+Date mounted/updated:	18/10/95
+File names:		dragwind.arc
+Unarchived files:	7
+Unarchived size:	14 kbytes
+Omissions:		
+See also:		MOVEWINDOW (a060), WINCTRL (d185)
+
+-------------------------------------------------------------------------------
+
+Acquiring the package:
+
+Download the archive file(s) and extract using SparkPlug 2
+(see the "tools_help" file in micros/arch/riscos/tools for further info).
+
+
+Description:
+
+DragWindow can be used to drag, resize or scroll windows even when the
+respective WIMP gadgets are unavailable.
