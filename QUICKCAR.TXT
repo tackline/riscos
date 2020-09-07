@@ -1,0 +1,59 @@
+Title:			QUICKCARET
+Author:			Richard Millican, Thomas Hawtin, Ernie Ong, Reuben Thomas
+Version:		1.04
+Title From:		Documentation
+Author From:		Documentation
+Version From:		Documentation
+Supplier:		Reuben Thomas <rrt1001@cam.ac.uk>
+Date:			15/10/96
+Keywords:               Display managers ; Window managers
+Shareware:		No
+Machine:		Archimedes
+Operating system:	RISCOS
+Memory requirements:	
+Peripherals needed:	
+Other s/ware needed:	
+Directory:		micros/arch/riscos/a/a256
+Date mounted/updated:	17/10/96
+File names:		quickcaret.arc
+			a256.arc
+Unarchived files:	12
+Unarchived size:	19 kbytes
+Omissions:		
+See also:		
+
+-------------------------------------------------------------------------------
+
+Acquiring the package:
+
+Download the archive file(s) and extract using SparkPlug 2 (see the "tools_help"
+file in arch/riscos/tools for further info).
+
+
+Description:
+
+QuickCaret will move the caret from window to window automatically when you
+move the pointer removing the need to click in each window first.
+
+a256.arc contains the original version 1.01.
+quickcaret.arc contains the latest version with changes and bug fixes.
+
+Version 1.04 Changes:
+
+    * Rewritten in BASIC assembler (all changed from v1.01 noted in source)
+    * More discriminating about which windows it will put the caret in (only
+      changes to windows which have a window button type 2-9 and 15 (RO3 PRM
+      p. 3-94))
+    * Not an application any more (run the module "QuickCaret" e.g. by double-
+      clicking to install it, or put it in your Boot sequence (but DON'T start
+      it before the desktop!))
+    * Incorporated Ernie Ong's v1.01a (actually, I almost had, but had
+      forgotten to insert a TEQ!) and fixes a problem: in his version, if a
+      new window appears with the caret, it'll keep it (good), but then if
+      you move to it and back to the old window, the focus doesn't move
+      (bad).
+    * Sleeps for 50cs between polls. Even less processor power taken, and it
+      has the good side-effect that if you whip from one side of the screen
+      to another, it generally doesn't distribute the focus to lots of
+      windows all the way across, but changes straight to the one in which
+      you stop.
