@@ -1,0 +1,2 @@
+Set DragWindow$Dir <Obey$Dir>
+IconSprites <DragWindow$Dir>.!Sprites

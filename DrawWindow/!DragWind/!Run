@@ -1,0 +1,4 @@
+Set DragWindow$Dir <Obey$Dir>
+IconSprites <DragWindow$Dir>.!Sprites
+SetType <Obey$Dir>.!RunImage Module
+RMRun <DragWindow$Dir>.!RunImage

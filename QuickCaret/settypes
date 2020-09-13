@@ -1,0 +1,7 @@
+SYS "OS_File", 1, "!QuickCrt.!Boot", &FFFFEB44, &702B259C,, &3
+SYS "OS_File", 1, "!QuickCrt.!Help", &FFFFFF44, &A8BDD144,, &3
+SYS "OS_File", 1, "!QuickCrt.!Run", &FFFFEB44, &A81399D8,, &3
+SYS "OS_File", 1, "!QuickCrt.!Sprites", &FFFFF944, &702B25D9,, &3
+SYS "OS_File", 1, "!QuickCrt.QuickCaret", &FFFFFA44, &A8BD1A42,, &3
+SYS "OS_File", 1, "!QuickCrt.s.QuickCaret", &FFFFFF44, &A8BD107B,, &3
+SYS "OS_File", 1, "QuitQuickC", &FFFFEB44, &A74E8D5C,, &3

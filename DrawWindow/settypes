@@ -1,0 +1,7 @@
+SYS "OS_File", 1, "!DragWind.!Boot", &FFFFEB46, &60A67508,, &3
+SYS "OS_File", 1, "!DragWind.!Help", &FFFFFF46, &6132673B,, &33
+SYS "OS_File", 1, "!DragWind.!Run", &FFFFEB46, &6111F4E7,, &3
+SYS "OS_File", 1, "!DragWind.!RunImage", &FFFFFA46, &612D1862,, &3
+SYS "OS_File", 1, "!DragWind.!Sprites", &FFFFF946, &60A7EC69,, &3
+SYS "OS_File", 1, "!DragWind.s.!RunImage", &FFFFFF46, &612D1243,, &3
+SYS "OS_File", 1, "KillDragW", &FFFFEB46, &609BC091,, &3

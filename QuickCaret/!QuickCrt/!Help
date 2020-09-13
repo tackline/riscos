@@ -1,0 +1,69 @@
+QuickCaret...
+
+Written by Richard Millican, Febrary 1993
+
+A tiny program hacked-up in minutes - literally.
+Do whatever you like with it, if you improve it,
+let me know...
+        
+Ever found it annoying to have to keep clicking
+windows to get the caret ? Well, load this little
+program and the caret will move from window
+to window automatically when you move the pointer.
+
+There are a few problems with editors and
+positioning, but you can still click to the required
+position if needs be.
+
+To quit from it you'll need to use the task manager,
+no snazzy front ends here :-)
+
+Hope someone finds it useful, if you're using a
+task window based language that needs text importing
+all the time then it's a must !
+
+If you need to contact me:
+
+  Richard Millican <millinr@cs.man.ac.uk>
+  10 Stokesay,
+  Bidston,
+  Birkenhead,
+  Merseyside,
+  L43 7PU.   
+  ENGLAND
+  
+  
+
+==
+
+Version 1.01
+        
+
+Changes:
+
+        o Rewritten in assembler.
+        o Now loads as a Module.
+        o Sleeps for 10cs between polls.
+        o QuitQCaret Obey file to kill the module (quitting from the
+                task manager still works, of course).
+
+Problems:
+
+        o DBox's may not know where to put caret or get confuzzed by
+                the caret's position.
+        o Some apps interpret gain and loss of caret specially
+                (e.g. Mads Meisner-Jensen's Hextris).
+        o Some apps do not pass on hot keys (e.g. the DDE FrontEnd).
+
+If you need to contact me:
+
+Term time (provided I pass my exams...)     Otherwise
+  Thomas Hawtin                               Thomas Hawtin
+  Hiatt Baker Hall                            Woodcourt Farm
+  Parry's Lane                                Harbertonford
+  Stoke Bishop                                Totnes
+  Bristol                                     Devon
+  BS9 1AD                                     TQ9 7TY
+  ENGLAND                                     ENGLAND
+
+Tackline (aka Thomas Hawtin)

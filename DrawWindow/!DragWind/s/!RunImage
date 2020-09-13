@@ -1,0 +1,507 @@
+; s.DragWindow - Drag window position, size and scroll bars (AAsm source)
+
+	ORG	0
+
+r0	RN	0
+r1	RN	1
+r2	RN	2
+r3	RN	3
+r4	RN	4
+r5	RN	5
+r6	RN	6
+r7	RN	7
+r8	RN	8
+r9	RN	9
+r10	RN	10
+r11	RN	11
+q	RN	12
+sp	RN	13
+lr	RN	14
+pc	RN	15
+
+SVC	*	3
+
+		^	0,q
+workSpaceStart	#	0
+miscBlock	#	&100
+wimpVersion	#	4	; Risc OS 2 doesn't support drag type 12
+taskHandle	#	4	; Our wimp task handle
+pollWord	#	4	; For event routine to flag
+dragType	#	4	; Drag currently in operation
+dragWindow	#	4	; Window being dragged
+modeMaxX	#	4	; Max X (OS units)
+modeMaxY	#	4	; Max Y (OS units)
+backWindow	#	4	; Window at back of stack
+workSpaceEnd	#	0
+
+WorkSpaceSize	*	workSpaceEnd - workSpaceStart
+
+XOS_Byte		*	&20006
+XOS_Claim		*	&2001F
+OS_Exit			*	&00011
+OS_ExitAndDie		*	&00050
+XOS_GBPB		*	&2000C
+XOS_GSTrans		*	&20027
+XOS_Module		*	&2001E
+XOS_ReadModeVariable	*	&20035
+XOS_Release		*	&20020
+XWimp_CloseDown		*	&600DD
+XWimp_CreateWindow	*	&600C1
+XWimp_DragBox		*	&600D0
+XWimp_GetPointerInfo	*	&600CF
+XWimp_GetWindowState	*	&600CB
+XWimp_Initialise	*	&600C0
+XWimp_OpenWindow	*	&600C5
+XWimp_Poll		*	&600C7
+Wimp_ReportError	*	&400DF
+XWimp_SendMessage	*	&600E7
+
+Byte_EventDisable	*	13
+Byte_EventEnable	*	14
+Byte_KeyboardScan	*	121
+
+EventV			*	&10
+Event_KeyUpDown		*	11
+Event_KeyUpDown_Up	*	0
+Event_KeyUpDown_Down	*	1
+InternalKey_AltRHS	*	5
+InternalKey_Ctrl	*	1
+InternalKey_Shift	*	0
+
+Key_Select		*	&70
+Key_Adjust		*	&72
+
+Module_Claim		*	6
+Module_Free		*	7
+
+ModeVariable_XEigFactor	*	4
+ModeVariable_YEigFactor	*	5
+ModeVariable_XWindLimit	*	11
+ModeVariable_YWindLimit	*	12
+
+
+Open_Window_Request	*	2
+PollWord_NonZero	*	13
+User_Message		*	17
+User_Message_Recorded	*	18
+Message_Quit		*	0
+Message_SaveDesktop	*	10
+Drag_Position		*	1
+Drag_Size		*	2
+Drag_Horizontal		*	3
+Drag_Vertical		*	4
+Drag_Fixed		*	8
+Drag_Ruber		*	9
+Drag_2WayScroll		*	12
+Drag_SpecialPosition	*	8
+Drag_AdjustBit		*	&80
+
+	DCD	RM_Start
+	DCD	RM_Initialise
+	DCD	RM_Finalise
+	DCD	0
+	DCD	RM_Title
+	DCD	RM_Help
+	DCD	0
+
+
+RM_Finalise
+	MOV	r6, lr			; r6 = return address
+
+	LDR	q, [q]			; Workspace pointer
+
+; NB: .GT. => Z clear, and either N set and V set, or N clear and V clear
+;     q >= 0, always  => so N clear, always
+;     therefore  .GT. => Z clear and V clear
+;     i.e. q is not 0 (but a pointer) and no errors have occurred
+
+	ADDS	r2, q, #0		; Workspace pointer
+
+	LDRGT	r4, taskHandle
+
+; Free workspace
+	MOVGT	r0, #Module_Free
+					; r2 = pointer to workspace
+	SWIGT	XOS_Module
+
+; Close down wimp task
+	MOVGT	r0, r4			; Task handle
+	LDRGT	r1, TASK
+	SWIGT	XWimp_CloseDown
+
+; Release event vector
+	MOVGT	r0, #EventV
+	ADRGT	r1, eventRoutine
+	SWIGT	XOS_Release
+
+; Disable keypress event
+	MOVGT	r0, #Byte_EventDisable
+	MOVGT	r1, #Event_KeyUpDown
+	SWIGT	XOS_Byte		; Corrupts r2, no doubt
+
+	MOV	pc, r6
+
+
+RM_Start
+	MOV	r0, #Module_Claim
+	MOV	r3, #WorkSpaceSize
+	SWI	XOS_Module		; Claim workspace
+	STRVC	r2, [q]			; Private word points to workspace
+	MOVVC	q, r2
+
+	LDRVC	r0, =310		; Last Wimp version known
+	LDRVC	r1, TASK
+	ADRVC	r2, RM_Title		; Task Name
+	ADRVC	r3, mesgList
+	SWIVC	XWimp_Initialise
+	BVS	exitAndDie
+	STR	r0, wimpVersion
+	STR	r1, taskHandle		; Keep task handle
+
+	MOVVC	r0, #EventV		; Claim event vector
+	ADRVC	r1, eventRoutine
+	MOVVC	r2, q
+	SWIVC	XOS_Claim
+
+	MOVVC	r0, #Byte_EventEnable	; Enable keypress event
+	MOVVC	r1, #Event_KeyUpDown
+	SWIVC	XOS_Byte
+
+; correct X and Y coords before open
+	MOVVC	r0, #-1			; Current screen mode
+	MOVVC	r1, #ModeVariable_XEigFactor
+	SWIVC	XOS_ReadModeVariable
+	MOVVC	r3, r2			; xEigFactor Log base 2
+	MOVVC	r1, #ModeVariable_XWindLimit
+	SWIVC	XOS_ReadModeVariable
+	MOVVC	r3, r2, ASL r3		; Screen x pixels-1 << xEigFactor
+	STRVC	r3, modeMaxX
+
+; correct X and Y coords before open
+	MOVVC	r0, #-1			; Current screen mode
+	MOVVC	r1, #ModeVariable_YEigFactor
+	SWIVC	XOS_ReadModeVariable
+	MOVVC	r3, r2			; yEigFactor Log base 2
+	MOVVC	r1, #ModeVariable_YWindLimit
+	SWIVC	XOS_ReadModeVariable
+	MOVVC	r3, r2, ASL r3		; Screen y pixels-1 << yEigFactor
+	STRVC	r3, modeMaxY
+
+	ADRVC	r1, backWindowCreate
+	SWIVC	XWimp_CreateWindow
+	STRVC	r0, backWindow
+
+	BVS	errorReport
+
+	MOV	r0, #0
+	STR	r0, pollWord		; Don't want to be polled to init
+
+pollLp
+	LDR	r0, eventMask		; Event mask
+	ADR	r1, miscBlock
+	ADR	r3, pollWord
+	SWI	XWimp_Poll
+	BVS	errorReport
+
+	TEQ	r0, #PollWord_NonZero
+	BEQ	pollWordNZ
+
+; Received quit message?
+	TEQ	r0, #User_Message
+	TEQNE	r0, #User_Message_Recorded
+	BNE	pollLp
+
+	LDR	r0, miscBlock+16
+
+	TEQ	r0, #Message_Quit
+	BEQ	exitAndDie		; Told to quit :(
+
+	TEQ	r0, #Message_SaveDesktop
+	BNE	pollLp
+
+	ADR	r0, desktopSaveStr
+	ADR	r1, miscBlock+24
+	MOV	r2, #256-24		; Skip Message_ header
+	SWI	XOS_GSTrans
+	BCS	pollLp			; Buffer overflowed
+
+
+	MOVVC	r0, #2			; Write bytes, current PTR#
+	ADDVC	r3, r2, #1		; Number of bytes (add "\n")
+	MOVVC	r2, r1			; Start
+	LDRVC	r1, miscBlock+20	; File handle
+	SWIVC	XOS_GBPB
+
+	BVC	pollLp
+	B	errorReport
+
+
+
+sendOpen
+; Simulate window position and size dragging without bringing to top
+	ADD	r1, q, #4		; Block starts at +4
+	LDMIB	r1, {r3-r6}		; Load new coords
+
+; Get details about window
+	LDR	r2, dragWindow
+	STR	r2, [r1, #0]
+	SWI	XWimp_GetWindowState
+	BVS	errorReport
+
+; Modify relevant coordinates
+	LDR	r0, dragType
+	TEQ	r0, #Drag_Position:OR:Drag_AdjustBit
+	STMEQIB	r1, {r3-r6}		; Store both new coords
+					;   (Reposition)
+	STRNE	r4, [r1, #4+4]		; New min y
+	STRNE	r5, [r1, #4+8]		; New max x
+					;   (Adjust size)
+
+; Tell window's owner to reopen window in new position
+	MOV	r0, #Open_Window_Request
+					; Event
+					; r1 = message block
+					; r2 = window handle
+	SWI	XWimp_SendMessage
+	BVC	pollLp
+
+	B	errorReport
+
+
+pollWordNZ
+; Reset poll word
+; r3 = drag type
+	LDR	r6, pollWord
+	TST	r6, #&100		; Polled because .EQ. => drag needs
+					;   starting, .NE. => pointer moved
+	STREQ	r6, dragType
+	MOV	r0, #0
+	STR	r0, pollWord		; Reset poll word, so we don't get
+					;   get called ad infinitum
+
+	BNE	sendOpen		; Asked to send message
+
+	ADR	r1, miscBlock
+	SWI	XWimp_GetPointerInfo
+
+	LDRVC	r5, [r1, #12]!		; r5 = window handle
+					; r1 points to window handle
+	SWIVC	XWimp_GetWindowState
+	BVS	errorReport
+
+	LDR	r4, [r1, #32]		; Window flags
+	TST	r4, #1<<5		; Pane
+	BNE	paneToParent
+paneToParentBack
+
+	TST	r5, #1<<31		; 31 bit = sign bit
+	BNE	pollLp			; Don't harras special windows
+					;   .NE. => but 31 set => negative
+
+	STR	r5, dragWindow
+
+; Convert first 5 words of WindowState block into DragBox block
+; by inserting window handle+drag type before bounding box
+	LDR	r0, wimpVersion
+	CMP	r0, #300		; 2WayScroll not in Risc OS 2
+	ASSERT	Drag_Horizontal < Drag_Vertical
+	RSBGES	r7, r6, #(Drag_Horizontal:OR:Drag_AdjustBit)-1
+	MOVLT	r6, #Drag_2WayScroll	; Adjust scrolling
+	CMPGE	r6, #Drag_AdjustBit
+
+	BGE	userDrag		; Special for some adjust drags
+
+userDragBack
+	STMDA	r1, {r5,r6}		; r5 = window handle
+	SUB	r1, r1, #4		; Point at DragBox block
+
+	SWI	XWimp_DragBox
+	BVS	errorReport
+
+	B	pollLp
+
+
+paneToParent
+; => r1 = some memory - 36
+;    r5 = pane window
+; <= r5 = parent window
+;    r1 preserved
+;    r0, r2-r3 corrupt
+	LDR	r2, backWindow
+	STR	r2, [r1, #0]
+	SWI	XWimp_GetWindowState
+	MOVVC	r0, #-2			; Bottom, -3 not in Risc OS 2
+	STRVC	r0, [r1, #28]		; The window behind
+	SWIVC	XWimp_OpenWindow
+	BVS	errorReport
+
+	MOV	r3, #-1			; Last known parentable window
+paneLp
+	LDR	r2, [r1, #28]		; Toyota
+	CMP	r2, #-1
+	BEQ	pollLp			; Window not in stack!
+	STR	r2, [r1, #0]		; Buy Toyota
+
+	SWI	XWimp_GetWindowState
+	BVS	errorReport
+
+	LDR	r0, [r1, #32]		; Flags
+	TST	r0, #1<<5		; Window is a pane?
+	MOVEQ	r3, r2			; Not a pane
+	CMP	r2, r5			; Found our pane?
+	BNE	paneLp
+
+	MOV	r5, r3			; Last non-pane window
+	STR	r5, [r1, #0]		; r5 = window handle
+					; r1 points to window handle
+	SWI	XWimp_GetWindowState
+	BVC	paneToParentBack
+	B	errorReport
+
+
+userDrag
+; Setup user drag
+; => r1 = window state
+;    q  = mouse block[0..15]
+; <= r6 = drag type
+	LDMIA	q, {r7,r8}		; Mouse x, y
+	LDMIB	r1!, {r3-r6}		; Window x,y; x,y
+
+	RSB	r3, r7, r3		; -Delta x0
+	RSB	r4, r8, r4		; -Delta y0
+
+	SUB	r5, r5, r7		;  Delta x1
+	SUB	r6, r6, r8		;  Delta y1
+	ASSERT	modeMaxY = modeMaxX+4
+	ADR	r7, modeMaxX
+	LDMIA	r7, {r7,r8}		; modeMax{X,Y}
+	ADD	r5, r5, r7		; Max x+Delta x1
+	ADD	r6, r6, r8		; Max y+Delta y1
+
+	ADD	r7, q, #8
+	ADR	r8, dragDraw
+	ADR	r9, dragRemove
+	ADR	r10, dragMove
+	STMIB	r1!, {r3-r10}
+
+	MOV	r6, #Drag_Fixed		; Needs special handling
+	SUB	r1, r1, #4*4+8*4
+
+	B	userDragBack
+
+
+dragDraw
+dragMove
+	TEQ	r0, r4			; Have we moved?
+	TEQEQ	r1, r5
+	TEQEQ	r2, r6
+	TEQEQ	r3, r7
+	MOVEQS	pc, lr			; Locks up otherwise!?
+
+	MOV	r4, #&100
+	STR	r4, pollWord-8
+	ASSERT	miscBlock = workSpaceStart
+	STMIA	q, {r0-r3}
+dragRemove
+RM_Initialise
+	MOVS	pc, lr
+
+
+errorReport
+	MOV	r1, #0			; Flags - default [OK]
+	ADR	r2, RM_Title
+	SWI	Wimp_ReportError	; X so next bit works??
+
+exitAndDie
+					; r1 != "ABEX"
+	ADR	r3, RM_Title		; Kill ourself
+	SWI	OS_ExitAndDie		; Take module down as well
+
+
+eventRoutine
+; Check for SELECT/ADJUST
+	TEQ	r0, #Event_KeyUpDown
+	MOVNES	pc, lr		 	; Not a keyboard/mouse event
+	CMP	r2, #Key_Select
+	ASSERT	Key_Select < Key_Adjust
+	MOVLTS	pc, lr			; Not a mouse button
+	TEQ	r1, #Event_KeyUpDown_Down
+	MOVNES	pc, lr			; Button going up, not down
+	TEQ	r2, #Key_Select
+	TEQNE	r2, #Key_Adjust
+	MOVNES	pc, lr			; In current hardware Key_Menu
+
+	STMFD	sp!, {r0-r3,r6-r7,lr}
+	MOV	r7, pc			; enter SVC (must preserve lr)
+	ORR	r6, r7, #SVC
+	TEQP	r6, #0
+
+	ASSERT	((Key_Select<<6):AND:(3<<6)) = (0<<7)
+	ASSERT	((Key_Adjust<<6):AND:(3<<6)) = (1<<7)
+	MOV	r3, r2, LSL#6		; NB: Instruction after TEQP must not
+					;   use r8-lr
+
+	MOV	r6, lr			; Store lr_svc
+
+	MOV	r0, #Byte_KeyboardScan
+	MOV	r1, #InternalKey_AltRHS:EOR:&80
+	SWI	XOS_Byte		; r2 corrupt
+	ORRS	r3, r3, r1, LSR#7	; .CC. => Alt not pressed
+	BCS	eventAltIsDown
+
+eventExit
+	MOV	lr, r6
+	TEQP	r7, #0			; Return to previous processor mode
+	MOV	r0, r0			; sp might not be switched in yet
+
+	LDMFD	sp!, {r0-r3,r6-r7,pc}^
+
+
+eventAltIsDown
+; => r0 = #Byte_KeyboardScan
+;    r3 = #1
+	BCC	eventExit
+	MOV	r1, #InternalKey_Shift:EOR:&80
+	SWI	XOS_Byte		; r2 corrupt
+	ADD	r3, r3, r1, LSR#7	; +1 for shift
+	MOV	r1, #InternalKey_Ctrl:EOR:&80
+	SWI	XOS_Byte		; r2 corrupt
+	TEQ	r1, #&ff		; Pressed?
+	RSBEQ	r3, r3, #5		; 5- for ctrl
+
+	STRB	r3, pollWord		; Poll word LSB
+; 0 => Alt *not* pressed
+; 1 => Alt		= Position
+; 2 => Alt+Shift	= Size
+; 3 => Alt+Shift+Ctrl	= Horizontal scroll
+; 4 => Alt+Ctrl		= Vertical scroll
+
+	B	eventExit
+
+backWindowCreate
+	DCD	-&01000000,-&01000000, -&01000000,-&01000000 ; visible area
+TASK	=	"TASK"
+eventMask	DCD	2_10010000001100101110011
+					; scroll offset - irrelevant
+	DCD	-2,&80000850		; Back window
+mesgList
+	DCD	Message_SaveDesktop
+	DCD	0			; End of list
+					; Have you seen the Acorn software
+					;   that starts its list with
+					;   Message_Quit? :)
+					; Colours, (last byte of 8 must be 0)
+desktopSaveStr	=	"/<DragWindow$Dir>\n"
+	ALIGN				; Work area [16B], Title flags [4B]
+	ASSERT	.-desktopSaveStr = 16+4
+	DCD	0			; Work area flags
+	DCD	1			; Wimp sprite area
+	DCW	0,0			; Min size - irrelevant
+RM_Title	=	"DragWindow\0\0"
+	ASSERT	.-RM_Title = 12
+	DCD	0			; 0 icons defined
+	ASSERT	.-backWindowCreate = 88
+
+RM_Help		=	"DragWindow\t0.01 (15 Oct 1995)\0"
+
+	END

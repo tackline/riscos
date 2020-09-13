@@ -1,0 +1,35 @@
+DragWindow 0.01 - Drag window's position, size and sliders
+
+SELECT
+Left Alt               - Drag position (and bring to front)
+Left Alt-Shift         - Drag size (and bring to front)
+Left Alt-Control       - Drag vertical slider
+Left Alt-Shift-Control - Drag horizontal slider
+
+ADJUST
+Left Alt               - Drag position (preserve depth)
+Left Alt-Shift         - Drag size (preserve depth)
+Left Alt-Control       - Drag both sliders
+Left Alt-Shift-Control - Drag both sliders
+
+Load the DragWind program by double clicking on the !DrawWind
+icon. To quit, either double click on the KillDragW file
+or quit from the task manager (DragWindow appears under the
+"Module Tasks:" heading).
+
+Press and hold the appropriate keys down.
+Move the pointer over the window you wish to manipulate.
+Press and hold either the SELECT or ADJUST button down.
+The keys can now be released.
+Drag the window position, size or sliders.
+Release the button when the window is as you want it.
+
+NB: For the benefit of Impression users, use the left Alt key for
+DragWindow and the right Alt (Alt Gr on some keyboards) for
+Impression.
+
+This program should work on all versions of RISC OS.
+
+Mail:   tackline@tackline.demon.co.uk
+S-mail: Thomas Hawtin, Woodcourt Farm, Harbertonford, Totnes,
+          Devon, TQ9 7TY
